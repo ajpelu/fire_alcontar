@@ -8,4 +8,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-Welcome to my research website.
+Evaluación de los efectos combinados del fuego (quemas prescritas) y la ganadería sobre diferentes parámetros de vegetación y del suelo.
+
+- [Análisis preeliminares](exploratory_analysis.html)

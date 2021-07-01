@@ -1,0 +1,219 @@
+---
+title: "Exploratory analysis"
+author: "Antonio J Perez-Luque"
+date: "2021-06-30"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+bibliography: references.bib
+csl: ecology-letters.csl
+code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+```
+
+# Introduction
+
+- Evaluar la variación de parámetros relacionados con vegetación tras la realización de quemas prescritas en parcelas con diferentes tratamientos de pastoreo. 
+
+- Analizar si la fecha de la quema afecta a la velocidad de recuperación. Existen algunos estudios que señalan que la recuperación de la vegetación en las zonas afectadas por fuegos de primavera es rápida [ver referencias en @Pereiraetal2016ShortTerm]
+
+```{r}
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotrix)
+library(DT)
+```
+
+
+## Preparar los datos
+
+Recodifico los datos para facilidad de manejo. 
+
+- ZONA. Se convierte a factor (`zonaCod`): 
+  + *Quemado con pastoreo* ~ **OP**
+  + *Quemado sin pastoreo* ~ **ONP**
+  + *Quemado primavera* ~ **PP**
+  
+- RANGO_INFOCA. Se convierte a factor (`rango`. Se añade "R" delante de cada rango (*i.e.* RANGO_INFOCA = 1 ~ **R1**)
+
+Se añade una variable de tiempo tras el fuego (***time***). Para ello, previamente establecemos la fecha de fuego en otoño (2018-12-18) y en primavera (2019-05-07). Seguidamente computamos el número de meses tras el fuego. Los muestreos previos al fuego se codifican como -1 en la variable `time` 
+  
+```{r, auxiliar-fuctions, echo=FALSE}
+getSeason <- function(DATES) {
+    WS <- as.Date("2012-12-21", format = "%Y-%m-%d") # Winter Solstice
+    SE <- as.Date("2012-3-21",  format = "%Y-%m-%d") # Spring Equinox
+    SS <- as.Date("2012-6-21",  format = "%Y-%m-%d") # Summer Solstice
+    FE <- as.Date("2012-9-21",  format = "%Y-%m-%d") # Fall Equinox
+
+    # Convert dates from any year to 2012 dates 
+    d <- as.Date(strftime(DATES, format="2012-%m-%d"))
+    
+    ifelse (d >= WS | d < SE, "Winter",
+      ifelse (d >= SE & d < SS, "Spring",
+        ifelse (d >= SS & d < FE, "Summer", "Autumn")))
+}
+
+```
+
+<details>
+  <summary>Ver código!</summary>
+  
+```{r prepare-data}
+df <- read_excel(path=here::here("data/Cobertura.xlsx"))
+
+quema_oto <- as.Date("2018-12-18")
+quema_pri <- as.Date("2019-05-07")
+
+cobertura <- df %>% 
+  mutate(zonaCod = 
+           as.factor(
+             case_when(
+             ZONA == "Quemado con pastoreo" ~ "OP",
+             ZONA == "Quemado sin pastoreo" ~ "ONP",
+             ZONA == "Quemado primavera" ~ "PP")),
+         rango = 
+           as.factor(
+             case_when(
+             RANGO_INFOCA == 1 ~ "R1",
+             RANGO_INFOCA == 2 ~ "R2",
+             RANGO_INFOCA == 3 ~ "R3",
+             RANGO_INFOCA == 4 ~ "R4"))) %>% 
+  mutate(time = 
+           case_when(
+    ZONA == "Quemado primavera" ~ (lubridate::interval(quema_pri, FECHA_MUESTREOS)) %/% months(1),
+    TRUE ~ (lubridate::interval(quema_oto, FECHA_MUESTREOS)) %/% months(1),
+    )) %>% 
+  mutate(time = 
+           case_when(time == 0 ~ -1,
+                     TRUE ~ time),
+         season = getSeason(FECHA_MUESTREOS),
+         year = as.factor(lubridate::year(FECHA_MUESTREOS))) %>% 
+  unite("timeSeason", year, season, sep="_", remove=FALSE) %>% 
+  filter(FECHA_MUESTREOS != as.Date("2020-12-21"))
+```
+
+</details>
+
+## Análisis exploratorio
+
+- Evolución temporal de la cobertura agrupada por zonas (`OP`,
+`ONP`, `PP`) para cada uno de los rangos. 
+
+- Calculamos el promedio de cobertura (`group_by` zonaCod y RANGO)
+
+- Se añaden las fechas de las quemas 
+
+<details>
+  <summary>Ver código!</summary>
+
+
+```{r}
+cob <- cobertura %>% 
+  group_by(zonaCod, time, rango) %>% 
+  summarise(mean = mean(COB_TOTAL, na.rm=TRUE),
+            sd = sd(COB_TOTAL, na.rm=TRUE),
+            se = plotrix::std.error(COB_TOTAL, na.rm=TRUE),
+          n = length(COB_TOTAL)) %>% 
+  mutate(pastoreo = 
+           case_when(
+             zonaCod == "OP" ~ "pastoreo",
+             zonaCod == "ONP" ~ "no pastoreo",
+             zonaCod == "PP" ~ "pastoreo")
+  )
+
+cob_season <- cobertura %>% 
+  group_by(zonaCod, timeSeason, rango, FECHA_MUESTREOS) %>% 
+  summarise(mean = mean(COB_TOTAL, na.rm=TRUE),
+            sd = sd(COB_TOTAL, na.rm=TRUE),
+            se = plotrix::std.error(COB_TOTAL, na.rm=TRUE),
+          n = length(COB_TOTAL)) %>% 
+  mutate(pastoreo = 
+           case_when(
+             zonaCod == "OP" ~ "pastoreo",
+             zonaCod == "ONP" ~ "no pastoreo",
+             zonaCod == "PP" ~ "pastoreo")
+  ) %>% 
+  mutate(timeSeason = factor(timeSeason, 
+                             levels = c("2018_Autumn", 
+                                        "2019_Spring","2019_Autumn",
+                                        "2020_Spring","2020_Autumn",
+                                        "2021_Spring"))) %>% 
+  ungroup()
+```
+
+
+</details> 
+
+```{r}
+datatable(cob_season) %>% formatRound(c("mean","sd","se"), 2)
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+p <- position_dodge(0.9)
+
+cob %>% ggplot(aes(x=time, y=mean, colour=zonaCod)) +
+  geom_line() + 
+  geom_point(position = p, 
+             aes(shape=pastoreo), 
+             size = 2) + 
+  geom_errorbar(aes(ymin = mean-se, 
+                    ymax = mean+se), 
+                position = p) + 
+  facet_wrap(~rango, ncol=1, scales = "free_y") + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(), 
+        strip.background = element_rect(fill="white")) + 
+  xlab("mothns after fire") +
+  ylab("veg. cover (%)") + 
+  geom_vline(xintercept = 0, linetype="dotted")
+
+```
+
+
+<details>
+  <summary>Ver código!</summary>
+  
+```{r}
+p <- position_dodge(0.9)
+plot_vegcob <- cob_season %>% ggplot(aes(x=FECHA_MUESTREOS, y=mean, colour=zonaCod,
+                          group=zonaCod)) +
+  geom_line(position = p) +  
+  geom_point(position = p, 
+             aes(shape=pastoreo), 
+             size = 3) + 
+  geom_errorbar(aes(ymin = mean-se, 
+                    ymax = mean+se), 
+                position = p) + 
+  facet_wrap(~rango, ncol=1, scales = "free_y") + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(), 
+        strip.background = element_rect(fill="white")) + 
+  ylab("veg. cover (%)") + 
+  xlab("Year") + 
+  scale_shape_manual(values=c(15,16)) + 
+  geom_vline(xintercept = as.POSIXct(quema_oto), linetype="dotted", size = 1) +
+  geom_vline(xintercept = as.POSIXct(quema_pri), linetype="dotted", colour="#00BFC4", size=1)
+```
+
+</details>
+
+```{r, plot-compare, fig.align='center', fig.width=6, fig.height=8.5, fig.cap="Evolución de la cobertura vegetal (%) tras las quemas prescritas en las tres parcelas de estudio. Se muestran valores medios y error estándar. Los cuadrados corresponden a las parcelas de no pastoreo, los circulos a las parcelas con pastoreo. Las líneas de puntos verticales indican el momento en el que se realizaron las quemas"}
+plot_vegcob
+```
+
+# Notas
+
+- @Keeleyetal2005DeterminantsPostfire en un estudio sobre  recuperación de la vegetación tras el fuego en matorrales mediterráneos de California, computaron índices de similaridad para la densidad (cobertura) de cada una de las especies antes y después de las quemas. De esta forma podían estimar el comportamiento de las especies tras el fuego. Además podían analizar las posibles relaciones de competencia que se producen tras el fuego entre las especies. Asímismo usando un índice de Jaccard, pudieron determinan cambios a nivel de comunidad. 
+
+- Existen varios estudios interesantes que presentan un diseño experimental similar, ver @Alcanizetal2016LongtermDynamics y @Alcanizetal202013YearApproach
+
+- Incluir otras covariables como la precipitación tras el fuego (nº de días sin lluvía, etc); la pendiente, etc. Ver el estudio de @Pereiraetal2016ShortTerm. 
+
+# References
