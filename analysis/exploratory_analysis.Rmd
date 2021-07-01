@@ -216,4 +216,9 @@ plot_vegcob
 
 - Incluir otras covariables como la precipitación tras el fuego (nº de días sin lluvía, etc); la pendiente, etc. Ver el estudio de @Pereiraetal2016ShortTerm. 
 
+- Otros trabajos a explorar: 
+
+   + @LopezPomaBautista2014PlantRegeneration y también su [tesis](https://rua.ua.es/dspace/bitstream/10045/41341/1/tesis_rosario_lopez_poma.pdf) aplican una aproximación de resiliencia. 
+   
+   
 # References
