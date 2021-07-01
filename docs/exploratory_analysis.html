@@ -498,16 +498,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstronga2df5c6"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> a2df5c6 </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong9675385"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> 9675385 </a>
 </p>
 </div>
-<div id="strongRepositoryversionstronga2df5c6" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrong9675385" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version a2df5c6. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version 9675385. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -558,6 +558,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+9675385
+</td>
+<td>
+Antonio J Perez-Luque
+</td>
+<td>
+2021-07-01
+</td>
+<td>
+wflow_publish(c(“analysis/exploratory_analysis.Rmd,” “analysis/references.bib”))
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+9881d73
+</td>
+<td>
+Antonio J Perez-Luque
+</td>
+<td>
+2021-07-01
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -720,6 +754,43 @@ plot_vegcob &lt;- cob_season %&gt;% ggplot(aes(x=FECHA_MUESTREOS, y=mean, colour
 Evolución de la cobertura vegetal (%) tras las quemas prescritas en las tres parcelas de estudio. Se muestran valores medios y error estándar. Los cuadrados corresponden a las parcelas de no pastoreo, los circulos a las parcelas con pastoreo. Las líneas de puntos verticales indican el momento en el que se realizaron las quemas
 </p>
 </div>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot-compare-1">
+Past versions of plot-compare-1.png
+</button>
+</p>
+<div id="fig-plot-compare-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+9881d73
+</td>
+<td>
+Antonio J Perez-Luque
+</td>
+<td>
+2021-07-01
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div id="notas" class="section level1">
@@ -728,6 +799,10 @@ Evolución de la cobertura vegetal (%) tras las quemas prescritas en las tres pa
 <li><p><span class="citation">Keeley <em>et al.</em> (2005)</span> en un estudio sobre recuperación de la vegetación tras el fuego en matorrales mediterráneos de California, computaron índices de similaridad para la densidad (cobertura) de cada una de las especies antes y después de las quemas. De esta forma podían estimar el comportamiento de las especies tras el fuego. Además podían analizar las posibles relaciones de competencia que se producen tras el fuego entre las especies. Asímismo usando un índice de Jaccard, pudieron determinan cambios a nivel de comunidad.</p></li>
 <li><p>Existen varios estudios interesantes que presentan un diseño experimental similar, ver <span class="citation">Alcañiz <em>et al.</em> (2016)</span> y <span class="citation">Alcañiz <em>et al.</em> (2020)</span></p></li>
 <li><p>Incluir otras covariables como la precipitación tras el fuego (nº de días sin lluvía, etc); la pendiente, etc. Ver el estudio de <span class="citation">Pereira <em>et al.</em> (2016)</span>.</p></li>
+<li><p>Otros trabajos a explorar:</p>
+<ul>
+<li><span class="citation">López-Poma &amp; Bautista (2014)</span> y también su <a href="https://rua.ua.es/dspace/bitstream/10045/41341/1/tesis_rosario_lopez_poma.pdf">tesis</a> aplican una aproximación de resiliencia.</li>
+</ul></li>
 </ul>
 </div>
 <div id="references" class="section level1">
@@ -741,6 +816,9 @@ Alcañiz, M., Úbeda, X. &amp; Cerdà, A. (2020). A 13-year approach to understa
 </div>
 <div id="ref-Keeleyetal2005DeterminantsPostfire" class="csl-entry">
 Keeley, J.E., Fotheringham, C.J. &amp; Baer-Keeley, M. (2005). <span>DETERMINANTS</span> <span>OF</span> <span>POSTFIRE</span> <span>RECOVERY</span> <span>AND</span> <span>SUCCESSION</span> <span>IN</span> <span>MEDITERRANEAN</span>-<span>CLIMATE</span> <span>SHRUBLANDS</span> <span>OF</span> <span>CALIFORNIA</span>. <em>Ecological Applications</em>, 15, 1515–1534.
+</div>
+<div id="ref-LopezPomaBautista2014PlantRegeneration" class="csl-entry">
+López-Poma, R. &amp; Bautista, S. (2014). Plant regeneration functional groups modulate the response to fire of soil enzyme activities in a mediterranean shrubland. <em>Soil Biology and Biochemistry</em>, 79, 5–13.
 </div>
 <div id="ref-Pereiraetal2016ShortTerm" class="csl-entry">
 Pereira, P., Cerdà, A., Lopez, A.J., Zavala, L.M., Mataix-Solera, J., Arcenegui, V., <em>et al.</em> (2016). Short-term vegetation recovery after a grassland fire in lithuania: The effects of fire severity, slope position and aspect. <em>Land Degradation <span>&amp;</span> Development</em>, 27, 1523–1534.
