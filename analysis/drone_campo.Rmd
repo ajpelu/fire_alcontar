@@ -6,6 +6,8 @@ output:
     toc: false
 editor_options:
   chunk_output_type: console
+bibliography: references.bib
+csl: ecology-letters.csl
 ---
 
 ## Introduction
@@ -28,9 +30,9 @@ library(DT)
 library(plotly)
 library(ggstatsplot)
 library(patchwork)
+library(cowplot)
+library(ggiraph)
 ```
-
-
 
 
 ```{r}
@@ -93,8 +95,8 @@ r2_labeller1 <- function(variable,value){
 
 ```{r}
 pr1 <- df %>% 
-  ggplot(aes(x=COB_TOTAL_M2, y = AREA_VEG_m2, color=as.factor(RANGO_INFOCA))) + 
-  geom_point() +
+  ggplot(aes(x=COB_TOTAL_M2, y = AREA_VEG_m2, color=as.factor(RANGO_INFOCA))) +
+  geom_point_interactive(aes(tooltip = QUADRAT, id=QUADRAT)) + 
   geom_abline(slope=1) +
   facet_wrap(~RANGO_INFOCA, labeller = r2_labeller1) + 
   theme_bw() + 
@@ -105,7 +107,7 @@ pr1 <- df %>%
     legend.position = "none", 
     panel.grid = element_blank(), 
     strip.background = element_rect(fill="white")
-  ) + ggtitle("Método 1")
+  ) + ggtitle("Método 1") 
 ```
 
 
@@ -133,7 +135,7 @@ r2_labeller2 <- function(variable,value){
 ```{r}
 pr2 <- df %>% 
   ggplot(aes(x=COB_TOTAL_M2, y = COBERTURA, color=as.factor(RANGO_INFOCA))) + 
-  geom_point() +
+  geom_point_interactive(aes(tooltip = QUADRAT, id=QUADRAT)) + 
   geom_abline(slope=1) +
   facet_wrap(~RANGO_INFOCA, labeller = r2_labeller2) + 
   theme_bw() + 
@@ -148,7 +150,12 @@ pr2 <- df %>%
 ```
 
 ```{r}
-pr1 + pr2
+# pr1 + pr2
+girafe(ggobj = plot_grid(pr1, pr2),
+                options = list(
+    opts_sizing(width = .7),
+    opts_zoom(max = 5))
+  )
 ```
 
 # Relation with Shannon Diversity 
@@ -156,7 +163,9 @@ pr1 + pr2
 ```{r}
 p1 <- df %>% 
   ggplot(aes(x=COB_TOTAL_M2, y = AREA_VEG_m2)) + 
-  geom_point(aes(size=Shannon), alpha=.4) +
+  geom_point_interactive(aes(
+    size=Shannon, tooltip = QUADRAT, id=QUADRAT),
+    alpha = .4) + 
   geom_abline(slope=1) +
   theme_bw() + 
   theme(legend.position = "bottom") + ggtitle("Método 1")
@@ -166,7 +175,9 @@ p1 <- df %>%
 ```{r}
 p2 <- df %>% 
   ggplot(aes(x=COB_TOTAL_M2, y = COBERTURA)) + 
-  geom_point(aes(size=Shannon), alpha=.4) +
+  geom_point_interactive(aes(
+    size=Shannon, tooltip = QUADRAT, id=QUADRAT),
+    alpha = .4) + 
   geom_abline(slope=1) +
   theme_bw() + 
   theme(legend.position = "bottom") + ggtitle("Método 2")
@@ -174,8 +185,21 @@ p2 <- df %>%
 ```
 
 ```{r}
-p1 + p2
+# p1 + p2
+girafe(ggobj = plot_grid(p1, p2),
+         options = list(
+    opts_sizing(width = .7),
+    opts_zoom(max = 5))
+  )
 ```
 
 
+## Notas 
+- Intentar correlacionar los residuos del modelo (de la correlación con otras variables: ith, slope). Para ello necesito el DMT obtenido con dron o usar un dtm genérico 
+
+- Aplicar análisis de clasificación ($\kappa$ coefficient). Ver un ejemplo en @Cunliffeetal2016UltrafineGrain. 
+
+- Revisar trabajos de @Cunliffeetal2016UltrafineGrain, @Abdullah2021 y similares. 
+
+- Relación de la estimación con la diversidad-abundancia (vía NMDS)
 
