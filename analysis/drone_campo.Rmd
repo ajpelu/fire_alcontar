@@ -1,0 +1,181 @@
+---
+title: "drone_campo"
+date: "2021-07-08"
+output: 
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+## Introduction
+- Read and prepare data 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.width=12, fig.height=8)
+```
+
+
+```{r}
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotrix)
+library(DT)
+library(plotly)
+library(ggstatsplot)
+library(patchwork)
+```
+
+
+
+
+```{r}
+cob.raw <- read_excel(path=here::here("data/test_drone.xlsx"),
+                 sheet = "COBERTURA")
+diversidad <- read_excel(path=here::here("data/test_drone.xlsx"),
+                 sheet = "SHANNON") %>% mutate(Shannon = abs(I_SHANNON))
+
+
+df <- cob.raw %>% inner_join(diversidad)
+```
+
+
+# Correlation general 
+## Method 1
+```{r}
+g1 <- ggscatterstats(df,
+               title = "Método 1",
+               x="COB_TOTAL_M2", y = "AREA_VEG_m2", 
+               marginal = FALSE, 
+               ggplot.component = 
+                 list(geom_abline(slope = 1))) 
+```
+
+## Method 2
+```{r}
+g2 <- ggscatterstats(df,
+               title = "Método 2",
+               x="COB_TOTAL_M2", y = "COBERTURA", 
+               marginal = FALSE, 
+               ggplot.component = 
+                 list(geom_abline(slope = 1))) 
+```
+
+```{r}
+g1 + g2
+```
+
+# Explore by RANGO_INFOCA 
+
+```{r, echo=FALSE}
+# https://stackoverflow.com/questions/17022553/adding-r2-on-graph-with-facets
+lm_eqn1 = function(df){
+  m = lm(AREA_VEG_m2 ~ COB_TOTAL_M2, 
+         df);
+  eq <- substitute(r2, 
+                   list(r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqns1 <- by(df, df$RANGO_INFOCA, lm_eqn1)
+df2_1 <- data.frame(eq = unclass(eqns1), RANGO_INFOCA = as.numeric(names(eqns1)))
+df2_1$lab = paste("RANGO = ", df2_1$RANGO_INFOCA, "R2 =", df2_1$eq, sep=" ")
+
+r2_labeller1 <- function(variable,value){
+  return(df2_1$lab)
+}
+```
+
+```{r}
+pr1 <- df %>% 
+  ggplot(aes(x=COB_TOTAL_M2, y = AREA_VEG_m2, color=as.factor(RANGO_INFOCA))) + 
+  geom_point() +
+  geom_abline(slope=1) +
+  facet_wrap(~RANGO_INFOCA, labeller = r2_labeller1) + 
+  theme_bw() + 
+  xlab("Campo (COB_TOTAL_M2)") + 
+  ylab("Drone (AREA_VEG_m2)") + 
+  geom_smooth(method = "lm") +
+  theme(
+    legend.position = "none", 
+    panel.grid = element_blank(), 
+    strip.background = element_rect(fill="white")
+  ) + ggtitle("Método 1")
+```
+
+
+
+```{r, echo=FALSE}
+# https://stackoverflow.com/questions/17022553/adding-r2-on-graph-with-facets
+lm_eqn2 = function(df){
+  m = lm(COBERTURA ~ COB_TOTAL_M2, 
+         df);
+  eq <- substitute(r2, 
+                   list(r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqns2 <- by(df, df$RANGO_INFOCA, lm_eqn2)
+df2_2 <- data.frame(eq = unclass(eqns2), RANGO_INFOCA = as.numeric(names(eqns2)))
+df2_2$lab = paste("RANGO = ", df2_2$RANGO_INFOCA, "R2 =", df2_2$eq, sep=" ")
+
+r2_labeller2 <- function(variable,value){
+  return(df2_2$lab)
+}
+```
+
+```{r}
+pr2 <- df %>% 
+  ggplot(aes(x=COB_TOTAL_M2, y = COBERTURA, color=as.factor(RANGO_INFOCA))) + 
+  geom_point() +
+  geom_abline(slope=1) +
+  facet_wrap(~RANGO_INFOCA, labeller = r2_labeller2) + 
+  theme_bw() + 
+  xlab("Campo (COB_TOTAL_M2)") + 
+  ylab("Drone (AREA_VEG_m2)") + 
+  geom_smooth(method = "lm") +
+  theme(
+    legend.position = "none", 
+    panel.grid = element_blank(), 
+    strip.background = element_rect(fill="white")
+  ) + ggtitle("Método 2")
+```
+
+```{r}
+pr1 + pr2
+```
+
+# Relation with Shannon Diversity 
+
+```{r}
+p1 <- df %>% 
+  ggplot(aes(x=COB_TOTAL_M2, y = AREA_VEG_m2)) + 
+  geom_point(aes(size=Shannon), alpha=.4) +
+  geom_abline(slope=1) +
+  theme_bw() + 
+  theme(legend.position = "bottom") + ggtitle("Método 1")
+
+```
+
+```{r}
+p2 <- df %>% 
+  ggplot(aes(x=COB_TOTAL_M2, y = COBERTURA)) + 
+  geom_point(aes(size=Shannon), alpha=.4) +
+  geom_abline(slope=1) +
+  theme_bw() + 
+  theme(legend.position = "bottom") + ggtitle("Método 2")
+
+```
+
+```{r}
+p1 + p2
+```
+
+
+
