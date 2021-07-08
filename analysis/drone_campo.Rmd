@@ -203,3 +203,4 @@ girafe(ggobj = plot_grid(p1, p2),
 
 - Relación de la estimación con la diversidad-abundancia (vía NMDS)
 
+# References
