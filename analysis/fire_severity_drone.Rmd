@@ -1,0 +1,125 @@
+---
+title: "fire_severity_drone"
+author: "Antonio J Perez-Luque"
+date: "2021-07-22"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.width=6, fig.height=6)
+```
+
+
+- Get severity category for each of the plots 
+
+```{r pkg}
+library(tidyverse)
+library(sf)
+library(raster)
+library(here)
+library(DiagrammeR)
+library(exactextractr)
+library(DT)
+library(ggpubr)
+```
+
+- Workflow
+
+```{r scheme, echo=FALSE}
+grViz("
+digraph {
+    node [shape = box, color = 'gray']
+    fire [label = 'Fire Severity \n raster (dEGI) \n from Carvajal et al. 2019']
+    dEGI3colors [label = 'Fire Severity \n 3 levels']
+    data [label = 'Classified parcelas'] 
+    
+    node [shape=parallelogram]
+    geoR [label = 'GeoReferenced']
+    RGB2PCT [label = 'Converstion \n RGB to PCT']
+    extract [label = 'Extract pixels']
+    pct [label= 'compute % pixels \n by fire severity']
+    clasify[label = 'classify parcela \n by Fire severity']
+    subgraph cluster_qgis {
+        label = 'QGIS'
+		color=black;
+		node [style=filled,color=white];
+		
+    fire -> geoR -> RGB2PCT -> dEGI3colors }
+    
+    subgraph cluster_r {
+	color=blue;
+	label='R'
+		
+    dEGI3colors -> extract -> pct -> clasify -> data} 
+   
+}"
+)
+```
+
+- Georreferenced map 
+
+![](assets/example-georreferenced.png) 
+
+```{r, read-data}
+dEGI <- raster(here::here("data/fire_severity_img/referenced/dEGI_3colors.tif"))
+
+parcelas <- st_read(dsn = "/Users/ajpelu/Google Drive/my_repos/serpam/ndvi_alcontar/data/spatial/parcelas/GEO_PARCELAS.shp",
+               quiet = TRUE)
+
+p <- parcelas %>% 
+  filter(stringr::str_detect(NOMBRE, "AL_P_|AL_NP"))
+
+```
+
+- Fire severity:  values 0 = high; values 2 = medium; values 1 = low; 
+
+```{r, extract-data}
+df <- exact_extract(dEGI, p,  include_cols = "NOMBRE",
+                    force_df=TRUE) %>% 
+  bind_rows() %>% 
+  mutate(fire_sevClass = case_when(
+    value == 0 ~ "high", 
+    value == 1 ~ "low",
+    value == 2 ~ "medium"
+  ))
+
+severity <- df %>% group_by(NOMBRE, fire_sevClass) %>% count() %>% 
+  pivot_wider(names_from = fire_sevClass, values_from = n) %>% 
+  rowwise() %>% 
+  mutate(n = sum(high, low, medium)) %>% 
+  mutate(high.pct = high/n*100, 
+         low.pct = low/n*100, 
+         medium.pct = medium/n*100) %>% 
+  mutate(treatment = case_when(
+    str_detect(NOMBRE, "AL_NP") ~ "NonGrazing", 
+    TRUE ~ "Grazing"
+  ))
+```
+
+```{r}
+severity %>% dplyr::select(NOMBRE, 
+                           high.pct, medium.pct, low.pct) %>% 
+datatable() %>% 
+  formatRound(columns=c("high.pct", "medium.pct", "low.pct"), digits=2)
+```
+
+
+```{r}
+g <- ggscatter(severity, x="high.pct", y="medium.pct", 
+          color = "treatment", 
+          ellipse = TRUE, 
+          xlab = "% pixels High severity",
+          ylab = "% pixels Medium severity") 
+ggpar(g, xlim=c(0,100), ylim = c(0,100))
+```
+
+At the end, the classification indicates: 
+
+- *Non Grazing* parcelas as ***High-Severity***
+- *Grazing* parcelas as ***Medium-Severity***
+

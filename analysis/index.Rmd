@@ -4,6 +4,8 @@ site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
     toc: false
+bibliography: references.bib
+csl: ecology-letters.csl
 editor_options:
   chunk_output_type: console
 ---
@@ -15,3 +17,11 @@ Evaluación de los efectos combinados del fuego (quemas prescritas) y la ganader
 ## Comparativa Drone - Campo 
 
 - [Análisis preeliminar Cobertura Drone *vs* Campo](drone_campo.html)
+
+## Fire-severity
+
+- [Classification of the parcelas according to fire severity](fire_severity_drone.html) derived from UAV data of Severity's map from @CarvajalRamirezetal2019EvaluationFire
+
+
+
+# References
