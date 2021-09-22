@@ -24,4 +24,6 @@ Evaluación de los efectos combinados del fuego (quemas prescritas) y la ganader
 
 - [Compute Normalized Burn Ratio from Sentinel](fire_severity_sentinel.html) and extract information of the plots. 
 
+- [Spatial visualization](burn_severity_maps.html) of the Burn Severity
+
 # References
