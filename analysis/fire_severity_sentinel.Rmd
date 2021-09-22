@@ -1,0 +1,531 @@
+---
+title: "fire_severity_sentinel"
+author: "Antonio J. Pérez-Luque (@ajpelu)"
+date: "2021-09-20"
+output: 
+  html_notebook: default
+  workflowr::wflow_html:
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.width=7, fig.height=7)
+```
+
+
+```{r pkg}
+library(tidyverse)
+library(sf)
+library(raster)
+library(here)
+library(DiagrammeR)
+library(exactextractr)
+library(rasterVis)
+library(ggpubr)
+library(patchwork)
+library(DT)
+```
+
+
+# Introduction
+
+Our ***aim*** is to compute the Burn Severity for the two Fires (atumn and spring fires) in our study area. 
+
+There are several indexes to compute the burn severity, all of them derived from the Normalized Burn Ratio (NBR). The **NBR** is defined as: $$NBR = \frac{\rho NIR - \rho SWIR}{\rho NIR + \rho SWIR}$$
+
+with $\rho NIR$ as the reflectance in the near-infrared, and $\rho SWIR$ as the reflectande in the shortwave infrared.This index is based on the observation that the healthy vegetation shows a very high reflectance in the NIR and a low reflectance in the SWIR portion of the spectrum. On the other hand, recently burnt areas show low reflectances in the NIR and high reflectances in the SWIR. Therefore, high values of NBR indicate healthy vegetation, and low values indicate bare ground and recently burnt areas. 
+
+![](https://www.earthdatascience.org/images/courses/earth-analytics/remote-sensing/barc_spectral_response_US_forest_service.png)
+
+
+The difference between pre-fire and post-fire NBR images is used to compute the $\Delta NBR$ (or $dNBR$). Higher value of *dNBR* indicates more severe damage. 
+
+There are several formulas to compute $dNBR$: 
+
+- $\Delta NBR = prefireNBR - postfireNBR$ o $dNBR$
+
+- $Relative \Delta NBR = \frac{\Delta NBR}{prefireNBR}$ o $RdNBR$ 
+
+- $Relativized BR = \frac{\Delta NBR}{(prefireNBR + 1.001)}$ 
+
+# Methodology 
+## Prepare and Download sentinel data from GEE.
+- We compute two pre-fire images and two post-fire images for each of the fires analyzed. The images' date depend on the availability of Sentinel images. Specifically we processes the following dates: 
+  
+  - Autumn fire (2018-18-12): pre-fire: 20181212, 20181217; post-fire: 20181222, 20181227; 
+  - Spring fire (2019-05-07): pre-fire: 20190426, 20190506; post-fire: 20190511, 20190514; 
+
+- For each date we computed the NBR index as the above mentioned equation (see this [GEE code](https://code.earthengine.google.com/13f68e283d59e8c54b2eadbb2eb45d9c))
+
+```{r}
+# Ojo ver en este trabajo el codigo GEE https://www.mdpi.com/2072-4292/10/6/879 
+```
+
+
+- Images were downloaded and processes in R. 
+
+## Compute the dNBR and other indexes.
+- In R, we computed the dNBR and the RBR (see [Parks et al. 2014](https://doi.org/10.3390/rs6031827)). The RBR is a modification of the RdNBR, that is less correlated with the previous fire condition
+
+- We explored the correlation of both indexes with the prefire conditions (prefireNBR). See Parks et al. 2014. 
+
+- Then we generated a raster with the nbr (dNBR) using only the previous and post fire images. 
+
+## Workflow
+```{r scheme, echo=FALSE}
+grViz("
+digraph {
+rankdir='TB';
+    node [shape = box, color = 'gray']
+
+    nbr [label = 'NBR-images \n pre (two images) \n and post (two images) fire']
+    imagesNBR [label = 'selected NBR images'] 
+    rasterNBR [label = 'NBR or RBR raster']
+    
+    node [shape=parallelogram]
+    spatialArea [label = 'Crop selected areas']
+    fireDates [label = 'Fire dates: \n Autumn 2018-18-12 \n Spring 2019-05-07']
+
+
+    computeIndex [label = 'Compute indexes: \n dNBR, RdNBR, RNB']
+    correlation [label = 'Explore correlations \n indexes with previous fire conditions'] 
+    generaRaster [label = 'Export raster of \n NBR and RBR of AoI']
+    extract [label = 'Extract pixels for PARCELAS']
+    
+    clasify[label = 'Classify \n by Fire severity']
+    pct [label= 'compute % pixels \n by fire severity']
+
+subgraph cluster_qgis {
+    
+    label = 'GEE code';
+    href = 'https://code.earthengine.google.com/13f68e283d59e8c54b2eadbb2eb45d9c';
+    color=black;
+
+clusterrank=local;
+		node [style=filled,color=white];
+    nbr -> fireDates -> spatialArea -> imagesNBR 
+}
+
+subgraph cluster_r {
+  color=blue;
+	label='R'
+  
+  imagesNBR -> computeIndex -> correlation -> generaRaster -> clasify -> extract -> pct
+
+}
+generaRaster -> rasterNBR
+   
+}"
+)
+```
+
+
+```{r genera-data}
+l <- list.files(here::here("data/sentinel_nbr"),
+                pattern=".tif",
+                full.names = TRUE)
+
+r <- raster::stack(l) 
+
+# Read spatial data
+# Add fire treatment: if NP or P --> AutumnFire /else/ SpringFire
+ep <- st_read(dsn = here::here("data/spatial/EP_Andalucía.shp"),
+               quiet = TRUE) %>% 
+  mutate(fireEpoch = case_when(ABREVIA == "PR" ~ "Spring", 
+                               TRUE ~ "Autumn"))
+
+ep_autumn <- subset(ep, fireEpoch == "Autumn")
+ep_spring <- subset(ep, fireEpoch == "Spring")
+```
+
+```{r}
+my.at <- c(-.25, -.1, .1, .27, .44, .66)
+
+cols <- c("#1a9850", # Regrowth-High
+          "#91cf60", # Regrowth-Low
+          "#d9ef8b", # Unburned
+          "#ffffbf", # Low Severity
+          "#fee08b", # Moderate-Low Severity
+          "#fc8d59", # Moderate-High Severity
+          "#d73027") # High Severity
+          
+# cols <- colorRampPalette(c("lightgreen", "yellow","red" ))(length(my.at))
+
+```
+
+# Burn Severity
+## Burn severity (Autumn Fire)
+```{r}
+nbr_autumn <- raster::overlay(
+  r[['s2nbr_2018.12.17']], r[['s2nbr_2018.12.22']],
+  fun = function(pre,post){return(pre-post)})
+names(nbr_autumn) <- 'nbr'
+
+rbr_autumn <- raster::overlay(
+  r[['s2nbr_2018.12.17']], r[['s2nbr_2018.12.22']],
+  fun = function(pre,post){return((pre-post)/(pre + 1.001))})
+names(rbr_autumn) <- 'rbr'
+```
+
+- Explore the correlation of both indices
+```{r}
+rbr_autumn.df <- as.data.frame(rbr_autumn, xy=TRUE)
+nbr_autumn.df <- as.data.frame(nbr_autumn, xy=TRUE)
+prefire_autumn.df <- as.data.frame(r[['s2nbr_2018.12.17']], xy= TRUE)
+
+
+y <- inner_join(rbr_autumn.df, 
+                nbr_autumn.df) %>% 
+  inner_join(prefire_autumn.df) %>% 
+  mutate(severity = 
+           cut(nbr, breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               "Regrowth High", "Regrowth Low", "Unburned", 
+               "Low Severity", "Moderate Low Severity", 
+               "Moderate High Severity", "High Severity")
+           ))
+
+## Correlation of NBR or RBR with previous prefire values. 
+## See Parks et al. 2014 doi:10.3390/rs6031827
+
+
+p.nbr <- ggscatter(y, 
+          x = "s2nbr_2018.12.17", 
+          y = "nbr", alpha=.5, 
+          color = "severity") + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = "red") +
+  ylab("NBR") + 
+  xlab("Prefire-NBR") 
+
+p.rbr <- ggscatter(y, 
+          x = "s2nbr_2018.12.17", 
+          y = "rbr", 
+          color = "severity", 
+          alpha=.5) + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = "red") + 
+  ylab("RBR") + 
+  xlab("Prefire-NBR") 
+  
+p.nbr + p.rbr
+```
+
+
+### Mapping 
+```{r}
+nbr_autumn_crop <- crop(nbr_autumn, extent(ep_autumn))
+nbr_autumn_mask <- mask(nbr_autumn_crop, ep_autumn)
+
+levelplot(nbr_autumn_mask, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c("regrowth", 
+                              "unburned", 
+                              "low", 
+                              "moderate-low",
+                              "moderate-high",
+                              "high")))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_autumn)))
+```
+
+
+
+
+
+
+```{r, eval=FALSE, echo=FALSE}
+# See https://www.fs.fed.us/rm/pubs/rmrs_gtr164/rmrs_gtr164_13_land_assess.pdf 
+reclass_df <- 
+  c(-0.500, -0.251, "regrowth-high",
+    -0.250, -0.101, "regrowth-high",
+    -0.100, 0.099, "unburned",
+    0.100, 0.269, "low severity",
+    0.270, 0.439, "moderate-low severity",
+    0.440, 0.659, "moderate-high severity",
+    0.660, 0.1300, "High severity") 
+
+reclass_df <- 
+  c(-0.500, -0.251, -2,
+    -0.250, -0.101, -1,
+    -0.100, 0.099, 0,
+    0.100, 0.269, 1,
+    0.270, 0.439, 2,
+    0.440, 0.659, 3) 
+,
+    0.660, 0.1300, 4) 
+
+
+reclass_m <- matrix(reclass_df, byrow = TRUE, ncol = 3)
+
+
+nbr_a.recla <- reclassify(nbr_a, reclass_m)
+
+# Extract data from Raster images 
+df <- exact_extract(r, ep, 
+              include_cell=TRUE, 
+              include_xy=TRUE, 
+              include_cols = "fireEpoch", force_df=TRUE) %>% 
+  bind_rows() %>% 
+  relocate(quema = fireEpoch, x, y, cell, coverage_fraction) %>% 
+  pivot_longer(cols = starts_with("s2nbr"), names_to = "s2nbr_date", values_to = "value") %>% 
+  separate(s2nbr_date, into = c("var", "dateraw"), sep = "_") %>% 
+  mutate(date = as.Date(dateraw, format="%Y.%m.%d")) %>% 
+  dplyr::select(-dateraw) 
+
+df_autumn <- df %>% 
+  filter(quema == "Autumn") %>% 
+  filter(date < lubridate::ymd("2019-01-01")) %>% 
+  mutate(date_img = case_when(
+    date == "2018-12-12" ~ "pre2",
+    date == "2018-12-17" ~ "pre1",
+    date == "2018-12-22" ~ "post1",
+    date == "2018-12-27" ~ "post2")
+    ) 
+write_csv(df_autumn, here::here("data/nbr_autumn.csv"))
+df_autumn <- read_csv(here::here("data/nbr_autumn.csv"))
+
+nbr_autumn <- df_autumn %>% 
+  filter(date_img %in% c("pre1", "post1")) %>% 
+  mutate(img = str_replace(date_img, "[:digit:]", "")) %>% 
+  dplyr::select(-date, -date_img, -var) %>% 
+  pivot_wider(names_from = img, values_from = value) %>% 
+  mutate(dNBR = pre - post, 
+         RdNBR = (pre - post)/pre)
+
+```
+
+
+
+
+
+
+
+
+## Burn severity (Spring Fire)
+```{r}
+nbr_spring <- raster::overlay(
+  r[['s2nbr_2019.05.06']], r[['s2nbr_2019.05.11']],
+  fun = function(pre,post){return(pre-post)})
+names(nbr_spring) <- 'nbr'
+
+
+rbr_spring <- raster::overlay(
+  r[['s2nbr_2019.05.06']], r[['s2nbr_2019.05.11']],
+  fun = function(pre,post){return((pre-post)/(pre + 1.001))})
+names(rbr_spring) <- 'rbr'
+```
+
+- Explore the correlation of both indices
+```{r}
+rbr_spring.df <- as.data.frame(rbr_spring, xy=TRUE)
+nbr_spring.df <- as.data.frame(nbr_spring, xy=TRUE)
+prefire_spring.df <- as.data.frame(r[['s2nbr_2019.05.06']], xy= TRUE)
+
+
+y <- inner_join(rbr_spring.df, 
+                nbr_spring.df) %>% 
+  inner_join(prefire_spring.df) %>% 
+  mutate(severity = 
+           cut(nbr, breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               "Regrowth High", "Regrowth Low", "Unburned", 
+               "Low Severity", "Moderate Low Severity", 
+               "Moderate High Severity", "High Severity")
+           ))
+
+## Correlation of NBR or RBR with previous prefire values. 
+## See Parks et al. 2014 doi:10.3390/rs6031827
+
+
+p.nbr <- ggscatter(y, 
+          x = "s2nbr_2019.05.06", 
+          y = "nbr", alpha=.5, 
+          color = "severity") + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = "red") +
+  ylab("NBR") + 
+  xlab("Prefire-NBR") 
+
+p.rbr <- ggscatter(y, 
+          x = "s2nbr_2019.05.06", 
+          y = "rbr", alpha=.5,
+          color = "severity") + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = "red") + 
+  ylab("RBR") + 
+  xlab("Prefire-NBR") 
+  
+p.nbr + p.rbr
+```
+
+
+
+### Mapping 
+```{r}
+nbr_spring_crop <- crop(nbr_spring, extent(ep_spring))
+nbr_spring_mask <- mask(nbr_spring_crop, ep_spring)
+
+levelplot(nbr_spring_mask, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c("regrowth", 
+                              "unburned", 
+                              "low", 
+                              "moderate-low",
+                              "moderate-high",
+                              "high")))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_spring)))
+```
+
+
+## Burn Severity (all areas)
+```{r}
+nbr_alcontar <- raster::merge(nbr_spring_mask, nbr_autumn_mask)
+levelplot(nbr_alcontar, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c("regrowth", 
+                              "unburned", 
+                              "low", 
+                              "moderate-low",
+                              "moderate-high",
+                              "high")))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_spring))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_autumn))) 
+
+writeRaster(nbr_alcontar, here::here("data/spatial/computed_nbr.tiff"), overwrite=TRUE)
+```
+
+
+```{r}
+rbr_spring_crop <- crop(rbr_spring, extent(ep_spring))
+rbr_spring_mask <- mask(rbr_spring_crop, ep_spring)
+rbr_autumn_crop <- crop(rbr_autumn, extent(ep_autumn))
+rbr_autumn_mask <- mask(rbr_autumn_crop, ep_autumn)
+
+rbr_alcontar <- raster::merge(rbr_spring_mask, rbr_autumn_mask)
+writeRaster(rbr_alcontar, here::here("data/spatial/computed_rbr.tiff"), overwrite = TRUE)
+```
+
+
+# Burn Severity by PLOTS 
+
+- Now we explore the burn severity of each plot 
+
+```{r}
+parcelas <- st_read(dsn = here::here("data/spatial/GEO_PARCELAS.shp"),
+               quiet = TRUE)
+
+p <- subset(parcelas, TIPO=="QUEMA")
+```
+
+```{r, message=FALSE, warning=FALSE}
+
+nbr_parcelas <- exact_extract(nbr_alcontar, p, 
+                              include_cols = "NOMBRE", 
+                              force_df = TRUE, 
+                              progress = FALSE) %>% 
+  bind_rows() %>% 
+  mutate(fract = round(coverage_fraction,2)) %>% 
+  mutate(nbr_class =
+           cut(value, 
+               breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               "Regrowth High", "Regrowth Low", "Unburned", 
+               "Low Severity", "Moderate Low Severity", 
+               "Moderate High Severity", "High Severity")
+           ))
+
+
+df <- nbr_parcelas %>% 
+  group_by(NOMBRE, nbr_class) %>%
+  summarise(n = sum(fract)) %>%  # ponderamos por frac 
+  pivot_wider(names_from = nbr_class, values_from = n) %>% 
+  rowwise() %>% 
+  mutate(n = sum(Unburned,`Low Severity`,`Moderate Low Severity`, na.rm=TRUE)) %>% 
+  mutate(unburned.pct = Unburned / n, 
+         low.pct = `Low Severity` / n,
+         moderatelow.pct = `Moderate Low Severity` / n) %>% 
+    mutate(treatment = case_when(
+    str_detect(NOMBRE, "AL_NP") ~ "NonGrazing", 
+    TRUE ~ "Grazing"
+  ))
+```
+
+```{r}
+df %>% dplyr::select(NOMBRE, 
+                     unburned.pct, 
+                     low.pct,
+                     moderatelow.pct) %>% 
+DT::datatable() %>% 
+  formatRound(columns=c("unburned.pct", "low.pct", "moderatelow.pct"), digits=2)
+```
+
+
+
+```{r}
+df %>% dplyr::select(NOMBRE, treatment, 
+                     unburned.pct, 
+                     low.pct,
+                     moderatelow.pct) %>% 
+  pivot_longer(cols=unburned.pct:moderatelow.pct) %>% 
+  ggplot(aes(x=name, y=value, fill=name)) + geom_bar(stat="identity") + 
+  facet_wrap(~treatment+NOMBRE, ncol=4) + 
+  scale_fill_manual(breaks = c("unburned.pct",
+                             "low.pct",
+                             "moderatelow.pct"), 
+                  values = c("lightgreen", 
+                             "lightyellow",
+                             "orange")) + 
+  theme_minimal() + 
+  ylab("% pixels") + xlab("") + 
+  theme(axis.text.x = element_blank(),
+        legend.position = "bottom")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
