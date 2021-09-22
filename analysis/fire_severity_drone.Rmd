@@ -63,7 +63,7 @@ digraph {
 
 - Georreferenced map 
 
-![](assets/example-georreferenced.png) 
+![](/assets/example-georreferenced.png) 
 
 ```{r, read-data}
 dEGI <- raster(here::here("data/fire_severity_img/referenced/dEGI_3colors.tif"))
@@ -80,7 +80,7 @@ p <- parcelas %>%
 
 ```{r, extract-data}
 df <- exact_extract(dEGI, p,  include_cols = "NOMBRE",
-                    force_df=TRUE) %>% 
+                    force_df=TRUE, progress = FALSE) %>% 
   bind_rows() %>% 
   mutate(fire_sevClass = case_when(
     value == 0 ~ "high", 
