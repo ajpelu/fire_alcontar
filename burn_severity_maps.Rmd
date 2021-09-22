@@ -1,0 +1,245 @@
+---
+title: "Burn Severity Map"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: yeti
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+library('flexdashboard')
+library('rgdal')
+library("leaflet") 
+library("leaflet.extras2")
+library("sf")
+library("tidyverse")
+library("raster")
+library("sp")
+library("lubridate")
+library("leafpop")
+library("here")
+library("crosstalk")
+library("ggtern")
+library("DT")
+```
+
+```{r}
+# see this issue 
+# https://github.com/jdblischak/workflowr/issues/115
+```
+
+
+```{r read.spatial, echo=FALSE}
+
+# EP 
+ep <- st_read(dsn = here::here("data/spatial/EP_Andalucía.shp"), quiet = TRUE)
+ep <- st_transform(ep, crs = 4326)
+
+ep <- ep %>%
+  mutate(
+    name =
+      case_when(
+        ABREVIA == "NP" ~ "Autumn Burning / No Browsing",
+        ABREVIA == "P" ~ "Autumn Burning / Browsing",
+        ABREVIA == "PR" ~ "Spring Burning / Browsing"
+      ),
+    fire_date = case_when(
+      ABREVIA == "PR" ~ "2019-05-07",
+      TRUE ~"2018-12-18"
+    )
+  )
+
+# Parcelas 
+parcelas <- st_read(dsn = here::here("data/spatial/GEO_PARCELAS.shp"),
+                    quiet = TRUE)
+parcelas <- st_transform(parcelas, crs = 4326)
+
+parcelas <- parcelas %>%
+  filter(TIPO == "QUEMA") %>%
+  mutate(
+    treatment_name =
+      case_when(
+        str_detect(NOMBRE, "AL_NP_") ~	"Autumn Burning / No Browsing",
+        str_detect(NOMBRE, "AL_PR_") ~ "Spring Burning / Browsing",
+        str_detect(NOMBRE, "AL_P_") ~ "Autumn Burning / Browsing"
+      ),
+    treatment_code =
+      case_when(
+        str_detect(NOMBRE, "AL_NP_") ~	"NP",
+        str_detect(NOMBRE, "AL_PR_") ~ "PR",
+        str_detect(NOMBRE, "AL_P_") ~ "P"
+      )
+  )
+```
+
+```{r read.rasters, echo=FALSE}
+nbrraw <- raster::raster(here::here("data/spatial/computed_nbr.tif"))
+nbr <- projectRaster(nbrraw, crs = CRS("+init=epsg:4326"))
+```
+
+
+```{r reclass, eval= FALSE, echo=FALSE}
+# Add attribute table
+nbr <- ratify(nbr)
+rat <- levels(nbr)[[1]]
+
+reclass_df <- data.frame(
+   inf=c(-Inf, -0.250, -0.1001, 0.100, 0.270, 0.440, 0.660), 
+   sup=c(-0.251, -0.100, 0.0999, 0.26999, 0.439, 0.659, Inf),
+   class=c(1,2,3,4,5,6,7), 
+   classF=c("regrowth-high", "regrowth-low", "unburned","low severity",
+            "moderate-low severity","moderate-high severity", "high severity"))
+
+reclass_mt <- as.matrix(reclass_df[,1:3], ncol=3)
+
+nbr <- reclassify(nbr, reclass_mt)
+
+```
+
+
+```{r}
+my.at <- c(-.25, -.1, .1, .27, .44, .66)
+# my.at <- reclass_df$class
+cols <- c("#1a9850", # Regrowth-High
+          "#91cf60", # Regrowth-Low
+          "#d9ef8b", # Unburned
+          "#ffffbf", # Low Severity
+          "#fee08b", # Moderate-Low Severity
+          "#fc8d59", # Moderate-High Severity
+          "#d73027") # High Severity
+colores <- leaflet::colorBin(palette = cols, bins = my.at, domain = my.at,
+                    na.color = "transparent") 
+```
+
+
+```{r baseMap}
+map_base <- leaflet(
+  options = leafletOptions(minZoom = 0, maxZoom = 24)) %>%
+  addWMSTiles(
+    baseUrl = "http://www.ideandalucia.es/wms/mdt_2005?",
+    layers = "Sombreado_10",
+    group = "Hillshade",
+    options = WMSTileOptions(
+      format = "image/png", 
+      transparent = TRUE),
+    attribution = '<a href="http://www.juntadeandalucia.es/institutodeestadisticaycartografia" target="_blank">Instituto de Estadística y Cartografía de Andalucía</a>'
+  ) %>%
+  addWMSTiles(
+    baseUrl = "http://www.ign.es/wms-inspire/ign-base?",
+    layers = "IGNBaseTodo",
+    group = "Basemap",
+    attribution = '© <a href="http://www.ign.es/ign/main/index.do" target="_blank">Instituto Geográfico Nacional de España</a>'
+  ) %>%  
+  addWMSTiles("http://www.ideandalucia.es/services/toporaster10/wms?",
+    layers = "toporaster10",
+    group = "Topographical",
+    options = WMSTileOptions(
+      format = "image/png", 
+      transparent = FALSE),
+    attribution = '<a href="http://www.juntadeandalucia.es/institutodeestadisticaycartografia" target="_blank">Instituto de Estadística y Cartografía de Andalucía</a>'
+  ) %>%
+  addWMSTiles("http://www.ideandalucia.es/wms/mta10r_2001-2013?",
+    layers = "mta10r_2001-2013",
+    group = "topo2013",
+    options = WMSTileOptions(
+      format = "image/png", 
+      transparent = FALSE),
+    attribution = '<a href="http://www.juntadeandalucia.es/institutodeestadisticaycartografia" target="_blank">Instituto de Estadística y Cartografía de Andalucía</a>'
+  ) %>% 
+  # addProviderTiles("Esri.WorldImagery", group = "Satellite") %>% 
+  addWMSTiles("http://www.ign.es/wms-inspire/pnoa-ma",
+    layers = "OI.OrthoimageCoverage",
+    group = "PNOA Máxima Actualidad",
+    options = WMSTileOptions(
+      format = "image/png", 
+      transparent = FALSE),
+    attribution = 'PNOA cedido por © <a href="http://www.ign.es/ign/main/index.do" target="_blank">Instituto Geográfico Nacional de España</a>'
+  ) %>% 
+    addLayersControl(
+    position = "bottomright",
+    baseGroups = c("Basemap", "PNOA Máxima Actualidad", "Hillshade", "Topographical", "topo2013"),
+    overlayGroups = c("NBR", "Plots", "Treatment"), 
+    options = layersControlOptions(collapsed = TRUE)
+  ) 
+```
+
+
+```{r, eval=FALSE}
+c("Regrowth-High","Regrowth-Low","Unburned","Low Severity","Moderate-Low Severity","Moderate-High Severity","High Severity")
+
+```
+
+
+```{r custom-popups}
+# Popups 
+# EP 
+factpal_ep <- colorFactor(c("#8dd3c7","#ff7f00","#bebada"), ep$ABREVIA)
+
+popup_ep <- paste0(
+  "<strong>Treatment:</strong> ", ep$name,
+  "<br><strong>Fire Date:</strong> ", ep$fire_date)
+
+ep$labels <- paste0("<strong>Treatment:</strong> ", ep$name) %>% 
+  lapply(htmltools::HTML)
+
+# Parcelas
+factpal_parcelas <- colorFactor(c("#8dd3c7","#ff7f00","#bebada"), parcelas$treatment_code)
+
+popup_parcelas <- paste0(
+"<strong>Plot code:</strong> ", parcelas$NOMBRE,
+    "<br><strong>Treatment:</strong> ", parcelas$treatment_name)
+
+parcelas$labels <- paste0("<strong>Plot Code:</strong> ", parcelas$NOMBRE) %>% 
+  lapply(htmltools::HTML)
+```
+
+
+```{r}
+# Set spatial extension 
+myext <- st_bbox(ep) %>% as.vector()
+
+map_base %>%
+  fitBounds(myext[1], myext[2], myext[3], myext[4]) %>% 
+  addPolygons(
+    data = ep,
+    fillColor = "transparent",
+    color = 'black',
+    stroke = TRUE,
+    popup = popup_ep,
+    label = ~labels,
+        labelOptions = labelOptions(
+      noHide = FALSE,
+      offset = c(0, 0),
+      textOnly = F,
+      style = list("color" = "black")
+    )
+  ) %>% 
+  addPolygons(
+    data = parcelas,
+    group = "Plots",
+    color = "black",
+    fillColor = "transparent",
+    stroke = TRUE,
+    popup = popup_parcelas
+  ) %>% 
+  addRasterImage(nbr, 
+                 group= "NBR", opacity = 0.5, 
+                 colors = colores) %>% 
+  addScaleBar(position = c("bottomleft")) %>% 
+  addLegend("bottomright",
+    pal = colores,
+    values = my.at, 
+    title = "Burn Severity")
+
+```
+
+
+
+
