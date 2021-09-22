@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Antonio J. Pérez-Luque (@ajpelu)" />
+
+<meta name="date" content="2021-09-20" />
+
+<title>fire_severity_sentinel</title>
+
+<script src="site_libs/header-attrs-2.8/header-attrs.js"></script>
+<script src="site_libs/jquery-3.5.1/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/htmlwidgets-1.5.3/htmlwidgets.js"></script>
+<script src="site_libs/viz-1.8.2/viz.js"></script>
+<link href="site_libs/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+<script src="site_libs/grViz-binding-1.0.6.1/grViz.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.17/datatables.js"></script>
+<link href="site_libs/dt-core-1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.10.20/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.10.20/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.1.1/css/crosstalk.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.1.1/js/crosstalk.min.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">fire_alcontar</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/ajpelu/fire_alcontar">
+    <span class="fas fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">fire_severity_sentinel</h1>
+<h4 class="author">Antonio J. Pérez-Luque (<span class="citation">@ajpelu</span>)</h4>
+<h4 class="date">2021-09-20</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2021-09-22
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>fire_alcontar/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.6.2). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20210630code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20210630)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20210630code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20210630)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomajpelufirealcontartreeb725df5cf0ccde7e9d1b8092d7cdc27bc5dfa1a4targetblankb725df5a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/ajpelu/fire_alcontar/tree/b725df5cf0ccde7e9d1b8092d7cdc27bc5dfa1a4" target="_blank">b725df5</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomajpelufirealcontartreeb725df5cf0ccde7e9d1b8092d7cdc27bc5dfa1a4targetblankb725df5a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/ajpelu/fire_alcontar/tree/b725df5cf0ccde7e9d1b8092d7cdc27bc5dfa1a4" target="_blank">b725df5</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  data/nbr_autumn.csv
+    Untracked:  data/sentinel_nbr/
+    Untracked:  data/spatial/EP_Andalucía.cpg
+    Untracked:  data/spatial/EP_Andalucía.dbf
+    Untracked:  data/spatial/EP_Andalucía.prj
+    Untracked:  data/spatial/EP_Andalucía.shp
+    Untracked:  data/spatial/EP_Andalucía.shx
+    Untracked:  data/spatial/GEO_PARCELAS.cpg
+    Untracked:  data/spatial/GEO_PARCELAS.dbf
+    Untracked:  data/spatial/GEO_PARCELAS.prj
+    Untracked:  data/spatial/GEO_PARCELAS.qpj
+    Untracked:  data/spatial/GEO_PARCELAS.shp
+    Untracked:  data/spatial/GEO_PARCELAS.shx
+    Untracked:  data/spatial/computed_nbr.tif
+    Untracked:  data/spatial/computed_nbr.tif.aux.xml
+    Untracked:  data/spatial/computed_rbr.tif
+
+Unstaged changes:
+    Modified:   analysis/fire_severity_drone.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were made to the R Markdown (<code>analysis/fire_severity_sentinel.Rmd</code>) and HTML (<code>docs/fire_severity_sentinel.html</code>) files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view the files as they were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/ajpelu/fire_alcontar/blob/b725df5cf0ccde7e9d1b8092d7cdc27bc5dfa1a4/analysis/fire_severity_sentinel.Rmd" target="_blank">b725df5</a>
+</td>
+<td>
+ajpelu
+</td>
+<td>
+2021-09-22
+</td>
+<td>
+add sentinel analysis
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<pre class="r"><code>library(tidyverse)
+library(sf)
+library(raster)
+library(here)
+library(DiagrammeR)
+library(exactextractr)
+library(rasterVis)
+library(ggpubr)
+library(patchwork)
+library(DT)</code></pre>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>Our <strong><em>aim</em></strong> is to compute the Burn Severity for the two Fires (atumn and spring fires) in our study area.</p>
+<p>There are several indexes to compute the burn severity, all of them derived from the Normalized Burn Ratio (NBR). The <strong>NBR</strong> is defined as: <span class="math display">\[NBR = \frac{\rho NIR - \rho SWIR}{\rho NIR + \rho SWIR}\]</span></p>
+<p>with <span class="math inline">\(\rho NIR\)</span> as the reflectance in the near-infrared, and <span class="math inline">\(\rho SWIR\)</span> as the reflectande in the shortwave infrared.This index is based on the observation that the healthy vegetation shows a very high reflectance in the NIR and a low reflectance in the SWIR portion of the spectrum. On the other hand, recently burnt areas show low reflectances in the NIR and high reflectances in the SWIR. Therefore, high values of NBR indicate healthy vegetation, and low values indicate bare ground and recently burnt areas.</p>
+<p><img src="https://www.earthdatascience.org/images/courses/earth-analytics/remote-sensing/barc_spectral_response_US_forest_service.png" /></p>
+<p>The difference between pre-fire and post-fire NBR images is used to compute the <span class="math inline">\(\Delta NBR\)</span> (or <span class="math inline">\(dNBR\)</span>). Higher value of <em>dNBR</em> indicates more severe damage.</p>
+<p>There are several formulas to compute <span class="math inline">\(dNBR\)</span>:</p>
+<ul>
+<li><p><span class="math inline">\(\Delta NBR = prefireNBR - postfireNBR\)</span> o <span class="math inline">\(dNBR\)</span></p></li>
+<li><p><span class="math inline">\(Relative \Delta NBR = \frac{\Delta NBR}{prefireNBR}\)</span> o <span class="math inline">\(RdNBR\)</span></p></li>
+<li><p><span class="math inline">\(Relativized BR = \frac{\Delta NBR}{(prefireNBR + 1.001)}\)</span></p></li>
+</ul>
+</div>
+<div id="methodology" class="section level1">
+<h1>Methodology</h1>
+<div id="prepare-and-download-sentinel-data-from-gee." class="section level2">
+<h2>Prepare and Download sentinel data from GEE.</h2>
+<ul>
+<li><p>We compute two pre-fire images and two post-fire images for each of the fires analyzed. The images’ date depend on the availability of Sentinel images. Specifically we processes the following dates:</p>
+<ul>
+<li>Autumn fire (2018-18-12): pre-fire: 20181212, 20181217; post-fire: 20181222, 20181227;</li>
+<li>Spring fire (2019-05-07): pre-fire: 20190426, 20190506; post-fire: 20190511, 20190514;</li>
+</ul></li>
+<li><p>For each date we computed the NBR index as the above mentioned equation (see this <a href="https://code.earthengine.google.com/13f68e283d59e8c54b2eadbb2eb45d9c">GEE code</a>)</p></li>
+</ul>
+<pre class="r"><code># Ojo ver en este trabajo el codigo GEE https://www.mdpi.com/2072-4292/10/6/879 </code></pre>
+<ul>
+<li>Images were downloaded and processes in R.</li>
+</ul>
+</div>
+<div id="compute-the-dnbr-and-other-indexes." class="section level2">
+<h2>Compute the dNBR and other indexes.</h2>
+<ul>
+<li><p>In R, we computed the dNBR and the RBR (see <a href="https://doi.org/10.3390/rs6031827">Parks et al. 2014</a>). The RBR is a modification of the RdNBR, that is less correlated with the previous fire condition</p></li>
+<li><p>We explored the correlation of both indexes with the prefire conditions (prefireNBR). See Parks et al. 2014.</p></li>
+<li><p>Then we generated a raster with the nbr (dNBR) using only the previous and post fire images.</p></li>
+</ul>
+</div>
+<div id="workflow" class="section level2">
+<h2>Workflow</h2>
+<div id="htmlwidget-9946b006d47f8e33ffe5" style="width:672px;height:672px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9946b006d47f8e33ffe5">{"x":{"diagram":"\ndigraph {\nrankdir=\"TB\";\n    node [shape = box, color = \"gray\"]\n\n    nbr [label = \"NBR-images \n pre (two images) \n and post (two images) fire\"]\n    imagesNBR [label = \"selected NBR images\"] \n    rasterNBR [label = \"NBR or RBR raster\"]\n    \n    node [shape=parallelogram]\n    spatialArea [label = \"Crop selected areas\"]\n    fireDates [label = \"Fire dates: \n Autumn 2018-18-12 \n Spring 2019-05-07\"]\n\n\n    computeIndex [label = \"Compute indexes: \n dNBR, RdNBR, RNB\"]\n    correlation [label = \"Explore correlations \n indexes with previous fire conditions\"] \n    generaRaster [label = \"Export raster of \n NBR and RBR of AoI\"]\n    extract [label = \"Extract pixels for PARCELAS\"]\n    \n    clasify[label = \"Classify \n by Fire severity\"]\n    pct [label= \"compute % pixels \n by fire severity\"]\n\nsubgraph cluster_qgis {\n    \n    label = \"GEE code\";\n    href = \"https://code.earthengine.google.com/13f68e283d59e8c54b2eadbb2eb45d9c\";\n    color=black;\n\nclusterrank=local;\n\t\tnode [style=filled,color=white];\n    nbr -> fireDates -> spatialArea -> imagesNBR \n}\n\nsubgraph cluster_r {\n  color=blue;\n\tlabel=\"R\"\n  \n  imagesNBR -> computeIndex -> correlation -> generaRaster -> clasify -> extract -> pct\n\n}\ngeneraRaster -> rasterNBR\n   \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<pre class="r"><code>l &lt;- list.files(here::here(&quot;data/sentinel_nbr&quot;),
+                pattern=&quot;.tif&quot;,
+                full.names = TRUE)
+
+r &lt;- raster::stack(l) 
+
+# Read spatial data
+# Add fire treatment: if NP or P --&gt; AutumnFire /else/ SpringFire
+ep &lt;- st_read(dsn = here::here(&quot;data/spatial/EP_Andalucía.shp&quot;),
+               quiet = TRUE) %&gt;% 
+  mutate(fireEpoch = case_when(ABREVIA == &quot;PR&quot; ~ &quot;Spring&quot;, 
+                               TRUE ~ &quot;Autumn&quot;))
+
+ep_autumn &lt;- subset(ep, fireEpoch == &quot;Autumn&quot;)
+ep_spring &lt;- subset(ep, fireEpoch == &quot;Spring&quot;)</code></pre>
+<pre class="r"><code>my.at &lt;- c(-.25, -.1, .1, .27, .44, .66)
+
+cols &lt;- c(&quot;#1a9850&quot;, # Regrowth-High
+          &quot;#91cf60&quot;, # Regrowth-Low
+          &quot;#d9ef8b&quot;, # Unburned
+          &quot;#ffffbf&quot;, # Low Severity
+          &quot;#fee08b&quot;, # Moderate-Low Severity
+          &quot;#fc8d59&quot;, # Moderate-High Severity
+          &quot;#d73027&quot;) # High Severity
+          
+# cols &lt;- colorRampPalette(c(&quot;lightgreen&quot;, &quot;yellow&quot;,&quot;red&quot; ))(length(my.at))</code></pre>
+</div>
+</div>
+<div id="burn-severity" class="section level1">
+<h1>Burn Severity</h1>
+<div id="burn-severity-autumn-fire" class="section level2">
+<h2>Burn severity (Autumn Fire)</h2>
+<pre class="r"><code>nbr_autumn &lt;- raster::overlay(
+  r[[&#39;s2nbr_2018.12.17&#39;]], r[[&#39;s2nbr_2018.12.22&#39;]],
+  fun = function(pre,post){return(pre-post)})
+names(nbr_autumn) &lt;- &#39;nbr&#39;
+
+rbr_autumn &lt;- raster::overlay(
+  r[[&#39;s2nbr_2018.12.17&#39;]], r[[&#39;s2nbr_2018.12.22&#39;]],
+  fun = function(pre,post){return((pre-post)/(pre + 1.001))})
+names(rbr_autumn) &lt;- &#39;rbr&#39;</code></pre>
+<ul>
+<li>Explore the correlation of both indices</li>
+</ul>
+<pre class="r"><code>rbr_autumn.df &lt;- as.data.frame(rbr_autumn, xy=TRUE)
+nbr_autumn.df &lt;- as.data.frame(nbr_autumn, xy=TRUE)
+prefire_autumn.df &lt;- as.data.frame(r[[&#39;s2nbr_2018.12.17&#39;]], xy= TRUE)
+
+
+y &lt;- inner_join(rbr_autumn.df, 
+                nbr_autumn.df) %&gt;% 
+  inner_join(prefire_autumn.df) %&gt;% 
+  mutate(severity = 
+           cut(nbr, breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               &quot;Regrowth High&quot;, &quot;Regrowth Low&quot;, &quot;Unburned&quot;, 
+               &quot;Low Severity&quot;, &quot;Moderate Low Severity&quot;, 
+               &quot;Moderate High Severity&quot;, &quot;High Severity&quot;)
+           ))
+
+## Correlation of NBR or RBR with previous prefire values. 
+## See Parks et al. 2014 doi:10.3390/rs6031827
+
+
+p.nbr &lt;- ggscatter(y, 
+          x = &quot;s2nbr_2018.12.17&quot;, 
+          y = &quot;nbr&quot;, alpha=.5, 
+          color = &quot;severity&quot;) + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = &quot;red&quot;) +
+  ylab(&quot;NBR&quot;) + 
+  xlab(&quot;Prefire-NBR&quot;) 
+
+p.rbr &lt;- ggscatter(y, 
+          x = &quot;s2nbr_2018.12.17&quot;, 
+          y = &quot;rbr&quot;, 
+          color = &quot;severity&quot;, 
+          alpha=.5) + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = &quot;red&quot;) + 
+  ylab(&quot;RBR&quot;) + 
+  xlab(&quot;Prefire-NBR&quot;) 
+  
+p.nbr + p.rbr</code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="mapping" class="section level3">
+<h3>Mapping</h3>
+<pre class="r"><code>nbr_autumn_crop &lt;- crop(nbr_autumn, extent(ep_autumn))
+nbr_autumn_mask &lt;- mask(nbr_autumn_crop, ep_autumn)
+
+levelplot(nbr_autumn_mask, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c(&quot;regrowth&quot;, 
+                              &quot;unburned&quot;, 
+                              &quot;low&quot;, 
+                              &quot;moderate-low&quot;,
+                              &quot;moderate-high&quot;,
+                              &quot;high&quot;)))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_autumn)))</code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="burn-severity-spring-fire" class="section level2">
+<h2>Burn severity (Spring Fire)</h2>
+<pre class="r"><code>nbr_spring &lt;- raster::overlay(
+  r[[&#39;s2nbr_2019.05.06&#39;]], r[[&#39;s2nbr_2019.05.11&#39;]],
+  fun = function(pre,post){return(pre-post)})
+names(nbr_spring) &lt;- &#39;nbr&#39;
+
+
+rbr_spring &lt;- raster::overlay(
+  r[[&#39;s2nbr_2019.05.06&#39;]], r[[&#39;s2nbr_2019.05.11&#39;]],
+  fun = function(pre,post){return((pre-post)/(pre + 1.001))})
+names(rbr_spring) &lt;- &#39;rbr&#39;</code></pre>
+<ul>
+<li>Explore the correlation of both indices</li>
+</ul>
+<pre class="r"><code>rbr_spring.df &lt;- as.data.frame(rbr_spring, xy=TRUE)
+nbr_spring.df &lt;- as.data.frame(nbr_spring, xy=TRUE)
+prefire_spring.df &lt;- as.data.frame(r[[&#39;s2nbr_2019.05.06&#39;]], xy= TRUE)
+
+
+y &lt;- inner_join(rbr_spring.df, 
+                nbr_spring.df) %&gt;% 
+  inner_join(prefire_spring.df) %&gt;% 
+  mutate(severity = 
+           cut(nbr, breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               &quot;Regrowth High&quot;, &quot;Regrowth Low&quot;, &quot;Unburned&quot;, 
+               &quot;Low Severity&quot;, &quot;Moderate Low Severity&quot;, 
+               &quot;Moderate High Severity&quot;, &quot;High Severity&quot;)
+           ))
+
+## Correlation of NBR or RBR with previous prefire values. 
+## See Parks et al. 2014 doi:10.3390/rs6031827
+
+
+p.nbr &lt;- ggscatter(y, 
+          x = &quot;s2nbr_2019.05.06&quot;, 
+          y = &quot;nbr&quot;, alpha=.5, 
+          color = &quot;severity&quot;) + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = &quot;red&quot;) +
+  ylab(&quot;NBR&quot;) + 
+  xlab(&quot;Prefire-NBR&quot;) 
+
+p.rbr &lt;- ggscatter(y, 
+          x = &quot;s2nbr_2019.05.06&quot;, 
+          y = &quot;rbr&quot;, alpha=.5,
+          color = &quot;severity&quot;) + 
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01, 
+           color = &quot;red&quot;) + 
+  ylab(&quot;RBR&quot;) + 
+  xlab(&quot;Prefire-NBR&quot;) 
+  
+p.nbr + p.rbr</code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="mapping-1" class="section level3">
+<h3>Mapping</h3>
+<pre class="r"><code>nbr_spring_crop &lt;- crop(nbr_spring, extent(ep_spring))
+nbr_spring_mask &lt;- mask(nbr_spring_crop, ep_spring)
+
+levelplot(nbr_spring_mask, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c(&quot;regrowth&quot;, 
+                              &quot;unburned&quot;, 
+                              &quot;low&quot;, 
+                              &quot;moderate-low&quot;,
+                              &quot;moderate-high&quot;,
+                              &quot;high&quot;)))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_spring)))</code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="burn-severity-all-areas" class="section level2">
+<h2>Burn Severity (all areas)</h2>
+<pre class="r"><code>nbr_alcontar &lt;- raster::merge(nbr_spring_mask, nbr_autumn_mask)
+levelplot(nbr_alcontar, margin = FALSE, 
+          at=my.at,
+          col.regions = cols,
+          color=list(
+            labels = list(at=my.at -0.1, 
+                          labels = 
+                            c(&quot;regrowth&quot;, 
+                              &quot;unburned&quot;, 
+                              &quot;low&quot;, 
+                              &quot;moderate-low&quot;,
+                              &quot;moderate-high&quot;,
+                              &quot;high&quot;)))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_spring))) + 
+  layer(sp::sp.polygons(as_Spatial(ep_autumn))) </code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>writeRaster(nbr_alcontar, here::here(&quot;data/spatial/computed_nbr.tiff&quot;), overwrite=TRUE)</code></pre>
+<pre class="r"><code>rbr_spring_crop &lt;- crop(rbr_spring, extent(ep_spring))
+rbr_spring_mask &lt;- mask(rbr_spring_crop, ep_spring)
+rbr_autumn_crop &lt;- crop(rbr_autumn, extent(ep_autumn))
+rbr_autumn_mask &lt;- mask(rbr_autumn_crop, ep_autumn)
+
+rbr_alcontar &lt;- raster::merge(rbr_spring_mask, rbr_autumn_mask)
+writeRaster(rbr_alcontar, here::here(&quot;data/spatial/computed_rbr.tiff&quot;), overwrite = TRUE)</code></pre>
+</div>
+</div>
+<div id="burn-severity-by-plots" class="section level1">
+<h1>Burn Severity by PLOTS</h1>
+<ul>
+<li>Now we explore the burn severity of each plot</li>
+</ul>
+<pre class="r"><code>parcelas &lt;- st_read(dsn = here::here(&quot;data/spatial/GEO_PARCELAS.shp&quot;),
+               quiet = TRUE)
+
+p &lt;- subset(parcelas, TIPO==&quot;QUEMA&quot;)</code></pre>
+<pre class="r"><code>nbr_parcelas &lt;- exact_extract(nbr_alcontar, p, 
+                              include_cols = &quot;NOMBRE&quot;, 
+                              force_df = TRUE, 
+                              progress = FALSE) %&gt;% 
+  bind_rows() %&gt;% 
+  mutate(fract = round(coverage_fraction,2)) %&gt;% 
+  mutate(nbr_class =
+           cut(value, 
+               breaks = c(-Inf, -.251, -.101, .099, 
+                               .269, .439,.659, Inf),
+               labels = c(
+               &quot;Regrowth High&quot;, &quot;Regrowth Low&quot;, &quot;Unburned&quot;, 
+               &quot;Low Severity&quot;, &quot;Moderate Low Severity&quot;, 
+               &quot;Moderate High Severity&quot;, &quot;High Severity&quot;)
+           ))
+
+
+df &lt;- nbr_parcelas %&gt;% 
+  group_by(NOMBRE, nbr_class) %&gt;%
+  summarise(n = sum(fract)) %&gt;%  # ponderamos por frac 
+  pivot_wider(names_from = nbr_class, values_from = n) %&gt;% 
+  rowwise() %&gt;% 
+  mutate(n = sum(Unburned,`Low Severity`,`Moderate Low Severity`, na.rm=TRUE)) %&gt;% 
+  mutate(unburned.pct = Unburned / n, 
+         low.pct = `Low Severity` / n,
+         moderatelow.pct = `Moderate Low Severity` / n) %&gt;% 
+    mutate(treatment = case_when(
+    str_detect(NOMBRE, &quot;AL_NP&quot;) ~ &quot;NonGrazing&quot;, 
+    TRUE ~ &quot;Grazing&quot;
+  ))</code></pre>
+<pre class="r"><code>df %&gt;% dplyr::select(NOMBRE, 
+                     unburned.pct, 
+                     low.pct,
+                     moderatelow.pct) %&gt;% 
+DT::datatable() %&gt;% 
+  formatRound(columns=c(&quot;unburned.pct&quot;, &quot;low.pct&quot;, &quot;moderatelow.pct&quot;), digits=2)</code></pre>
+<div id="htmlwidget-675d5633d264c427e80f" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-675d5633d264c427e80f">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12"],["AL_NP_13","AL_NP_7","AL_NP_8","AL_NP_9","AL_P_11","AL_P_12","AL_P_14","AL_P_4","AL_PR_15","AL_PR_16","AL_PR_17","AL_PR_18"],[0.461065573770492,0.116564417177914,null,0.00204498977505112,0.112704918032787,0.206967213114754,0.0858895705521472,null,0.0838445807770961,null,null,null],[0.190573770491803,0.662576687116564,0.432377049180328,0.529652351738241,0.297131147540984,0.657786885245902,0.840490797546012,0.0513347022587269,0.916155419222904,null,0.918032786885246,0.448770491803279],[0.348360655737705,0.220858895705521,0.567622950819672,0.468302658486708,0.590163934426229,0.135245901639344,0.0736196319018405,0.948665297741273,null,1,0.0819672131147541,0.551229508196721]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>NOMBRE<\/th>\n      <th>unburned.pct<\/th>\n      <th>low.pct<\/th>\n      <th>moderatelow.pct<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"targets":2,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\");\n  }"},{"targets":3,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\");\n  }"},{"targets":4,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\");\n  }"},{"className":"dt-right","targets":[2,3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":["options.columnDefs.0.render","options.columnDefs.1.render","options.columnDefs.2.render"],"jsHooks":[]}</script>
+<pre class="r"><code>df %&gt;% dplyr::select(NOMBRE, treatment, 
+                     unburned.pct, 
+                     low.pct,
+                     moderatelow.pct) %&gt;% 
+  pivot_longer(cols=unburned.pct:moderatelow.pct) %&gt;% 
+  ggplot(aes(x=name, y=value, fill=name)) + geom_bar(stat=&quot;identity&quot;) + 
+  facet_wrap(~treatment+NOMBRE, ncol=4) + 
+  scale_fill_manual(breaks = c(&quot;unburned.pct&quot;,
+                             &quot;low.pct&quot;,
+                             &quot;moderatelow.pct&quot;), 
+                  values = c(&quot;lightgreen&quot;, 
+                             &quot;lightyellow&quot;,
+                             &quot;orange&quot;)) + 
+  theme_minimal() + 
+  ylab(&quot;% pixels&quot;) + xlab(&quot;&quot;) + 
+  theme(axis.text.x = element_blank(),
+        legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="figure/fire_severity_sentinel.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.2 (2020-06-22)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Catalina 10.15.3
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] DT_0.17             patchwork_1.1.1     ggpubr_0.4.0       
+ [4] rasterVis_0.49      latticeExtra_0.6-29 lattice_0.20-41    
+ [7] exactextractr_0.5.1 DiagrammeR_1.0.6.1  here_1.0.1         
+[10] raster_3.4-5        sp_1.4-5            sf_1.0-2           
+[13] forcats_0.5.1       stringr_1.4.0       dplyr_1.0.6        
+[16] purrr_0.3.4         readr_1.4.0         tidyr_1.1.3        
+[19] tibble_3.1.2        ggplot2_3.3.5       tidyverse_1.3.1    
+[22] workflowr_1.6.2    
+
+loaded via a namespace (and not attached):
+ [1] colorspace_2.0-0   ggsignif_0.6.0     ellipsis_0.3.2     class_7.3-18      
+ [5] rio_0.5.16         rgdal_1.5-23       rprojroot_2.0.2    fs_1.5.0          
+ [9] rstudioapi_0.13    proxy_0.4-26       farver_2.0.3       hexbin_1.28.2     
+[13] fansi_0.4.2        lubridate_1.7.10   xml2_1.3.2         codetools_0.2-18  
+[17] knitr_1.31         jsonlite_1.7.2     broom_0.7.9        dbplyr_2.1.1      
+[21] png_0.1-7          compiler_4.0.2     httr_1.4.2         backports_1.2.1   
+[25] assertthat_0.2.1   fastmap_1.1.0      cli_2.5.0          later_1.1.0.1     
+[29] visNetwork_2.0.9   htmltools_0.5.2    tools_4.0.2        gtable_0.3.0      
+[33] glue_1.4.2         Rcpp_1.0.7         carData_3.0-4      cellranger_1.1.0  
+[37] jquerylib_0.1.3    vctrs_0.3.8        crosstalk_1.1.1    xfun_0.23         
+[41] openxlsx_4.2.3     rvest_1.0.0        lifecycle_1.0.0    rstatix_0.6.0     
+[45] zoo_1.8-8          scales_1.1.1       hms_1.0.0          promises_1.2.0.1  
+[49] parallel_4.0.2     RColorBrewer_1.1-2 yaml_2.2.1         curl_4.3          
+[53] sass_0.3.1         stringi_1.7.4      highr_0.8          e1071_1.7-8       
+[57] zip_2.1.1          rlang_0.4.10       pkgconfig_2.0.3    evaluate_0.14     
+[61] labeling_0.4.2     htmlwidgets_1.5.3  tidyselect_1.1.1   magrittr_2.0.1    
+[65] R6_2.5.0           generics_0.1.0     DBI_1.1.1          pillar_1.6.1      
+[69] haven_2.3.1        whisker_0.4        foreign_0.8-81     withr_2.4.1       
+[73] units_0.7-2        abind_1.4-5        modelr_0.1.8       crayon_1.4.1      
+[77] car_3.0-10         KernSmooth_2.23-18 utf8_1.1.4         rmarkdown_2.8     
+[81] jpeg_0.1-8.1       grid_4.0.2         readxl_1.3.1       data.table_1.14.0 
+[85] git2r_0.28.0       reprex_2.0.0       digest_0.6.27      classInt_0.4-3    
+[89] httpuv_1.5.5       munsell_0.5.0      viridisLite_0.3.0  bslib_0.2.4       </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
